@@ -43,6 +43,26 @@ Opportunities are logged to stdout, e.g.:
 2026-01-01 00:00:00,000 INFO ARBITRAGE OPPORTUNITY alt=ETH direction=usdt_btc_alt profit=0.1200%
 ```
 
+## Live dashboard
+
+Every poll also appends events (one per sync, plus one per opportunity found)
+to a JSONL log file (default `scanner_log.jsonl`, override with `--log-file`,
+or disable with `--no-log`). `dashboard.py` reads that same file and serves a
+self-refreshing local web page with live stats and a table of recent
+opportunities -- it never talks to Binance itself, so it's safe to leave open.
+
+Run the scanner and the dashboard as two processes:
+
+```bash
+python3 main.py &
+python3 dashboard.py
+```
+
+Then open http://127.0.0.1:8765 in a browser. Flags: `--log-file`, `--host`,
+`--port`, `--refresh` (browser poll interval in seconds), `--max-events` (how
+many recent log lines to read per request). If you pointed `main.py` at a
+custom `--log-file`, pass the same path to `dashboard.py`.
+
 ## Tests
 
 ```bash
@@ -51,4 +71,5 @@ python3 -m pytest tests/ -v
 
 Tests exercise the arbitrage math directly against mocked bid/ask data
 (fair-market no-opportunity case, a deliberately mispriced case, missing
-symbols, and profit ordering) so they run without any network access.
+symbols, and profit ordering) and the JSONL log store (round-trip, malformed
+lines, tailing, summarization) so they run without any network access.

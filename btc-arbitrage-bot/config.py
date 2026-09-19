@@ -47,3 +47,11 @@ POLL_INTERVAL_SECONDS = 1.0
 
 BOOK_TICKER_URL = "https://api.binance.com/api/v3/ticker/bookTicker"
 REQUEST_TIMEOUT_SECONDS = 5
+
+# JSONL event log shared with the dashboard (see logstore.py).
+LOG_FILE = "scanner_log.jsonl"
+
+DASHBOARD_HOST = "127.0.0.1"
+DASHBOARD_PORT = 8765
+DASHBOARD_REFRESH_SECONDS = 2.0
+DASHBOARD_MAX_EVENTS = 2000
