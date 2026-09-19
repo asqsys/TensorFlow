@@ -51,6 +51,27 @@ def test_missing_symbol_is_skipped_not_raised():
     assert detect_opportunities(tickers, altcoins=["ETH"]) == []
 
 
+def test_delisted_symbol_with_zero_price_is_skipped_not_raised():
+    # Binance returns bid/ask of "0.00000000" (not an omitted row) for a
+    # symbol with no live order book, e.g. a delisted/inactive pair. This
+    # must be skipped like a missing symbol, not divide by zero.
+    tickers = {
+        BTC_QUOTE_SYMBOL: make_ticker(BTC_QUOTE_SYMBOL, 50000, 50010),
+        alt_btc_symbol("MATIC"): make_ticker(alt_btc_symbol("MATIC"), 0.0, 0.0),
+        alt_quote_symbol("MATIC"): make_ticker(alt_quote_symbol("MATIC"), 0.5, 0.51),
+    }
+    assert detect_opportunities(tickers, altcoins=["MATIC"]) == []
+
+
+def test_zero_price_btc_usdt_returns_empty():
+    tickers = {
+        BTC_QUOTE_SYMBOL: make_ticker(BTC_QUOTE_SYMBOL, 0.0, 0.0),
+        alt_btc_symbol("ETH"): make_ticker(alt_btc_symbol("ETH"), 0.05, 0.05),
+        alt_quote_symbol("ETH"): make_ticker(alt_quote_symbol("ETH"), 2500, 2500),
+    }
+    assert detect_opportunities(tickers, altcoins=["ETH"]) == []
+
+
 def test_missing_btc_usdt_returns_empty():
     tickers = {
         alt_btc_symbol("ETH"): make_ticker(alt_btc_symbol("ETH"), 0.05, 0.05),

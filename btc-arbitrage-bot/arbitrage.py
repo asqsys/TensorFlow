@@ -38,6 +38,12 @@ def _apply_fee(amount: float, fee: float = TAKER_FEE) -> float:
     return amount * (1.0 - fee)
 
 
+def _has_tradable_prices(ticker: BookTicker) -> bool:
+    """False for a symbol with no live order book (delisted/inactive), where
+    Binance returns 0 instead of dropping the symbol from bookTicker."""
+    return ticker.bid_price > 0 and ticker.ask_price > 0
+
+
 def _cycle_usdt_btc_alt(btc_usdt: BookTicker, alt_btc: BookTicker,
                          alt_usdt: BookTicker) -> float:
     """USDT -> BTC -> ALT -> USDT. Returns final USDT amount from 1 USDT."""
@@ -62,11 +68,13 @@ def detect_opportunities(
     """Scan all watched triangles and return profitable opportunities.
 
     Markets missing from `tickers` (e.g. a symbol dropped from a partial
-    API response) are skipped rather than raising, since a single stale
-    poll shouldn't crash the scanning loop.
+    API response) or with no live order book -- Binance returns bid/ask of
+    0 for a delisted or inactive symbol instead of omitting it -- are
+    skipped rather than raising, since a single stale or degraded poll
+    shouldn't crash the scanning loop.
     """
     btc_usdt = tickers.get(BTC_QUOTE_SYMBOL)
-    if btc_usdt is None:
+    if btc_usdt is None or not _has_tradable_prices(btc_usdt):
         return []
 
     opportunities: list[Opportunity] = []
@@ -74,6 +82,8 @@ def detect_opportunities(
         alt_btc = tickers.get(alt_btc_symbol(alt))
         alt_usdt = tickers.get(alt_quote_symbol(alt))
         if alt_btc is None or alt_usdt is None:
+            continue
+        if not _has_tradable_prices(alt_btc) or not _has_tradable_prices(alt_usdt):
             continue
 
         final_a = _cycle_usdt_btc_alt(btc_usdt, alt_btc, alt_usdt)
